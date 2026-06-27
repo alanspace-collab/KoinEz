@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ketuk Koin Nyata</title>
     
-    <!-- SDK IKLAN ASLI KAMU -->
-    <script src='//libtl.com/sdk.js' data-zone='11205683' data-sdk='show_11205683'></script>
+    <!-- SDK IKLAN BARU KAMU (ZONE: 11205903) -->
+    <script src='//libtl.com/sdk.js' data-zone='11205903' data-sdk='show_11205903'></script>
 
     <style>
         body {
@@ -16,24 +16,29 @@
             text-align: center;
             margin: 0;
             padding: 20px;
-            padding-bottom: 80px; /* Jarak agar tidak tertutup menu bawah */
+            padding-bottom: 80px;
         }
-        .container { margin-top: 30px; }
-        h1 { color: #f39c12; font-size: 26px; }
+        .container { margin-top: 20px; }
+        h1 { color: #f39c12; font-size: 26px; margin-bottom: 5px; }
         .score-box {
-            font-size: 40px;
+            font-size: 42px;
             font-weight: bold;
-            margin: 15px 0;
+            margin: 10px 0;
             color: #f1c40f;
+        }
+        .energy-box {
+            font-size: 16px;
+            color: #bdc3c7;
+            margin-bottom: 20px;
         }
         .coin-btn {
             background: radial-gradient(circle, #f39c12, #d35400);
-            width: 160px;
-            height: 160px;
+            width: 170px;
+            height: 170px;
             border-radius: 50%;
             border: 6px solid #f1c40f;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            font-size: 55px;
+            font-size: 60px;
             color: white;
             cursor: pointer;
             outline: none;
@@ -42,21 +47,26 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .coin-btn:active { transform: scale(0.92); }
+        
         .ad-btn {
             background-color: #27ae60;
             color: white;
             border: none;
             padding: 12px 25px;
-            font-size: 16px;
+            font-size: 15px;
             border-radius: 25px;
-            margin-top: 25px;
+            margin-top: 20px;
             font-weight: bold;
             cursor: pointer;
+            width: 90%;
+            max-width: 300px;
         }
         
-        /* SISTEM MENU BAWAH (NAVBAR) */
+        /* NAVBAR */
         .navbar {
             position: fixed;
             bottom: 0;
@@ -67,6 +77,7 @@
             justify-content: space-around;
             padding: 15px 0;
             box-shadow: 0 -5px 10px rgba(0,0,0,0.3);
+            z-index: 100;
         }
         .nav-item {
             color: #bdc3c7;
@@ -78,7 +89,7 @@
         }
         .nav-item.active { color: #f1c40f; }
 
-        /* HALAMAN HADIAH */
+        /* PAGES */
         .page { display: none; }
         .page.active { display: block; }
         .reward-card {
@@ -107,27 +118,31 @@
 </head>
 <body>
 
-    <!-- ==================== TAB 1: GAME KETUK ==================== -->
+    <!-- ==================== TAB 1: GAME ==================== -->
     <div id="game-page" class="page active">
         <div class="container">
-            <h1>KUMPULKAN KOINMU!</h1>
-            <p>Ketuk koin emas di bawah untuk menambah saldo</p>
+            <h1>KUMPULKAN KOIN</h1>
             
             <div class="score-box" id="score">0</div>
+            
+            <!-- Tampilan Energi Berkurang/Bertambah -->
+            <div class="energy-box">⚡ Energi: <span id="energy">500</span>/500</div>
+            
             <button class="coin-btn" onclick="tambahPoin()">🪙</button>
             <br>
-            <button class="ad-btn" onclick="tontonIklan()">📺 Tonton Iklan (Bonus +50 Poin)</button>
+            
+            <!-- Tombol Iklan Baru Kamu -->
+            <button class="ad-btn" onclick="tontonIklan()">📺 Nonton Iklan (Bonus +50 Poin)</button>
         </div>
     </div>
 
-    <!-- ==================== TAB 2: TUKAR HADIAH ==================== -->
+    <!-- ==================== TAB 2: HADIAH ==================== -->
     <div id="reward-page" class="page">
         <div class="container">
             <h1>TUKAR HADIAH</h1>
             <p>Saldo Poin Kamu: <span id="reward-score" style="color: #f1c40f; font-weight: bold;">0</span> Poin</p>
             <hr style="border: 1px solid #34495e; width: 90%;">
 
-            <!-- Hadiah 1 -->
             <div class="reward-card">
                 <div class="reward-info">
                     <h3>Saldo DANA Rp 5.000</h3>
@@ -136,7 +151,6 @@
                 <button class="redeem-btn" onclick="tukarHadiah('DANA Rp 5.000', 50000)">Tukar</button>
             </div>
 
-            <!-- Hadiah 2 -->
             <div class="reward-card">
                 <div class="reward-info">
                     <h3>Saldo DANA Rp 10.000</h3>
@@ -154,36 +168,63 @@
     </div>
 
     <script>
+        // Logika Penyimpanan Data Sementara Bawaan HP
         let poin = parseInt(localStorage.getItem('saldoPoin')) || 0;
+        let energi = parseInt(localStorage.getItem('sisaEnergi'));
+        
+        // Set default energi ke 500 jika baru pertama main
+        if (isNaN(energi)) energi = 500;
+
         const scoreDisplay = document.getElementById('score');
         const rewardScoreDisplay = document.getElementById('reward-score');
+        const energyDisplay = document.getElementById('energy');
         
-        // Sinkronisasi poin di awal
         scoreDisplay.innerText = poin;
         rewardScoreDisplay.innerText = poin;
+        energyDisplay.innerText = energi;
 
+        // Otomatis isi ulang energi +1 setiap 3 detik ketika game dibuka
+        setInterval(() => {
+            if (energi < 500) {
+                energi += 1;
+                energyDisplay.innerText = energi;
+                localStorage.setItem('sisaEnergi', energi);
+            }
+        }, 3000);
+
+        // FUNGSI KETUK KOIN
         function tambahPoin() {
-            poin += 1;
-            updatePoin();
+            if (energi > 0) {
+                poin += 1;
+                energi -= 1;
+                updateTampilan();
+            } else {
+                alert("Energi habis! Tunggu terisi otomatis atau tonton iklan untuk bonus koin.");
+            }
         }
 
-        function updatePoin() {
+        function updateTampilan() {
             scoreDisplay.innerText = poin;
             rewardScoreDisplay.innerText = poin;
+            energyDisplay.innerText = energi;
             localStorage.setItem('saldoPoin', poin);
+            localStorage.setItem('sisaEnergi', energi);
         }
 
+        // INTEGRASI KODE IKLAN POPUP BARU KAMU (11205903)
         function tontonIklan() {
-            show_11205683('pop').then(() => {
-                poin += 50;
-                updatePoin();
-                alert("Selamat! Kamu mendapatkan bonus 50 poin.");
+            show_11205903('pop').then(() => {
+                // EKSPLORASI HADIAH JIKA BERHASIL NONTON SAMPAI SELESAI
+                poin += 50; 
+                energi = 500; // Sekaligus isi ulang energi penuh!
+                updateTampilan();
+                alert("Sukses! +50 Poin dan Energi kamu terisi penuh kembali!");
             }).catch(e => {
                 alert("Iklan gagal dimuat atau ditutup terlalu cepat.");
             });
         }
 
-        // FUNGSI PERPINDAHAN HALAMAN (TAB)
+        // SISTEM NAVIGASI HALAMAN
         function bukaTab(namaTab) {
             document.getElementById('game-page').classList.remove('active');
             document.getElementById('reward-page').classList.remove('active');
@@ -199,19 +240,17 @@
             }
         }
 
-        // FUNGSI PROSES TUKAR HADIAH
+        // KLAIM HADIAH
         function tukarHadiah(namaHadiah, syaratPoin) {
             if (poin < syaratPoin) {
-                alert("Poin kamu belum cukup untuk menukar " + namaHadiah + ". Kumpulkan lagi ya!");
+                alert("Poin kamu belum cukup untuk menukar " + namaHadiah);
             } else {
-                let nomorEwallet = prompt("Masukkan nomor DANA/HP kamu untuk pengiriman hadiah:");
+                let nomorEwallet = prompt("Masukkan nomor DANA/HP kamu:");
                 if (nomorEwallet) {
                     poin -= syaratPoin;
-                    updatePoin();
-                    
-                    // Mengarahkan otomatis ke chat pemilik bot/owner untuk proses klaim manual
-                    alert("Klaim berhasil diproses! Kamu akan diarahkan ke admin untuk validasi.");
-                    window.open("https://t.me/KetukKoinKeren_bot?text=Halo%20Admin,%20saya%20mau%20klaim%20" + encodeURIComponent(namaHadiah) + "%20ke%20nomor%20" + nomorEwallet);
+                    updateTampilan();
+                    alert("Klaim berhasil diproses!");
+                    window.open("https://t.me/CQClickQoinEz_bot?text=Halo%20Admin,%20saya%20mau%20klaim%20" + encodeURIComponent(namaHadiah) + "%20ke%20nomor%20" + nomorEwallet);
                 }
             }
         }
